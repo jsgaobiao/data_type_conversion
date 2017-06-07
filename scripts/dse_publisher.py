@@ -53,12 +53,12 @@ if __name__ == '__main__':
     rate = rospy.Rate(40)  # hz
     scanData = initScan()
 
-    if len(sys.argv) != 3 :
-        print '[Usage : pythone dse_publisher.py [input file name] [output file name]'
+    if len(sys.argv) != 2 :
+        print '[Usage : pythone dse_publisher.py [input file name]'
         sys.exit()
     else :
         fileIn = sys.argv[1]
-        fileOut = sys.argv[2]
+        # fileOut = sys.argv[2]
 
     fin = open(fileIn, 'r')
     angRange = float(fin.readline())
