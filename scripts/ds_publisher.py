@@ -34,11 +34,11 @@ def initScan() :
     scanData.header.frame_id = 'laser'
     scanData.angle_min = -math.pi # / 2.0
     scanData.angle_max =  math.pi # / 2.0
-    scanData.angle_increment = 0.008726646  # 0.5 degree
+    scanData.angle_increment = 0.003492599  # 360 / 1799 degree
     scanData.time_increment = 1.73611151695e-05
     scanData.scan_time = 0.0250000003725
     scanData.range_min = 0.0230000000447
-    scanData.range_max = 60
+    scanData.range_max = 100
     return scanData
 
 
@@ -67,12 +67,14 @@ if __name__ == '__main__':
     # for i in range(6800) :  # skip datas that the car dosen't move
     #     line0 = fin.readline()
     #     line1 = fin.readline()
+    line0 = fin.readline()
+    line1 = fin.readline()
     line0 = line0.split(',')
     line1 = line1.split(',')
-    initX = float(line0[4])
-    initY = float(line0[5])
-    initYaw = float(line0[3])
-    lastTimeStamp = float(line0[8])
+    initX = float(line0[3])
+    initY = float(line0[4])
+    initYaw = float(line0[2])
+    lastTimeStamp = float(line0[7])
     scanNum = len(line1)
 
 
@@ -89,9 +91,9 @@ if __name__ == '__main__':
         line1 = line1.split(',')
 
         # get (x, y, yaw) and broadcast to /tf  ( odom -> base_link)
-        x = float(line0[4]) - initX
-        y = float(line0[5]) - initY
-        yaw = formatYaw(float(line0[3]) - initYaw)
+        x = float(line0[3]) - initX
+        y = float(line0[4]) - initY
+        yaw = formatYaw(float(line0[2]) - initYaw)
         tfBr.sendTransform((-y, x, 0),
                            tf.transformations.quaternion_from_euler(0, 0, yaw),
                            nowStamp,
