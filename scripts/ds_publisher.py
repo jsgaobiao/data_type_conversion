@@ -94,8 +94,9 @@ if __name__ == '__main__':
         x = float(line0[3]) - initX
         y = float(line0[4]) - initY
         yaw = formatYaw(float(line0[2]) - initYaw)
+        # yaw += 0.09424778
         tfBr.sendTransform((-y, x, 0),
-                           tf.transformations.quaternion_from_euler(0, 0, yaw),
+                           tf.transformations.quaternion_from_euler(0, 0, -yaw),
                            nowStamp,
                            'base_link',
                            'odom')
