@@ -7,6 +7,7 @@ import string
 import math
 import time
 import tf
+import pdb
 from sensor_msgs.msg._LaserScan import LaserScan
 from sensor_msgs.msg._PointCloud2 import PointCloud2
 from sensor_msgs.msg._PointField import PointField
@@ -35,8 +36,6 @@ def xy2Degree(x, y) :
 def remapLmsData(lmsData, pointNum) :
     lms = [32760 for i in range(1800)]
     for i in range(pointNum) :
-        # degree = float(float(i) / float(pointNum)) * 360.0
-        # (dis,) = struct.unpack('h', lmsData[i * 2 : i * 2 + 2])
         (x,) = struct.unpack('f', lmsData[i * 8 : i * 8 + 4])
         (y,) = struct.unpack('f', lmsData[i * 8 + 4 : i * 8 + 8])
         x = float(x)
@@ -61,8 +60,8 @@ if __name__ == '__main__':
     pGPS = 0
     cntGPS = 0
 
-    fin = open('Anting_20_22_0726.highxy', 'rb')
-    tfin = open('Anting_0726.nav', 'r')
+    fin = open('outdoor_20_22_0726.highxy', 'rb')
+    tfin = open('outdoor_0726.nav', 'r')
     fout = open('Anting_20_22_0726.ds', 'wb')
 
     angRange = struct.pack('f', 360)
@@ -101,7 +100,11 @@ if __name__ == '__main__':
         pointNum = fin.read(4)
         (pointNum,) = struct.unpack('i', pointNum)
         lmsData = fin.read(4 * 2 * pointNum)
+        if len(lmsData) != pointNum*8 :
+            break
         zeroData = fin.read(4 * 2 * (2200 - pointNum))
+        if len(zeroData) != (2200 - pointNum)*8 :
+            break
         lmsData = remapLmsData(lmsData, pointNum)
 
         # find matched GPS data
