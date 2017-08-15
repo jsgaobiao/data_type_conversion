@@ -59,9 +59,9 @@ if __name__ == '__main__':
     pGPS = 0
     cntGPS = 0
 
-    fin = open('obstacle_outdoor_in_SAIC_04_06_plane.highxy', 'rb')
-    tfin = open('obstacle_outdoor_in_SAIC.nav', 'r')
-    fout = open('outdoor_04_06.txt', 'w')
+    fin = open('Anting_20_22_0725.highxy', 'rb')
+    tfin = open('Anting_0725.nav', 'r')
+    fout = open('Anting_20_22_0725.txt', 'w')
 
     angRange = 360
     angRes   = 360.0 / 1799.0

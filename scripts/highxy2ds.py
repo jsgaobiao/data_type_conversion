@@ -5,6 +5,7 @@ import rospy
 import sys
 import string
 import math
+import time
 import tf
 from sensor_msgs.msg._LaserScan import LaserScan
 from sensor_msgs.msg._PointCloud2 import PointCloud2
@@ -49,6 +50,7 @@ def remapLmsData(lmsData, pointNum) :
         if lms[remapDegree] > dis :
             lms[remapDegree] = dis
     ret = ''
+    # print lms
     for i in range(1800) :
         ret = ret + struct.pack('h', lms[i])
     return ret
@@ -59,9 +61,9 @@ if __name__ == '__main__':
     pGPS = 0
     cntGPS = 0
 
-    fin = open('antingRoad_10_15.highxy', 'rb')
-    tfin = open('new_outdoor.nav', 'r')
-    fout = open('antingRoad_10_15.ds', 'wb')
+    fin = open('Anting_20_22_0726.highxy', 'rb')
+    tfin = open('Anting_0726.nav', 'r')
+    fout = open('Anting_20_22_0726.ds', 'wb')
 
     angRange = struct.pack('f', 360)
     angRes   = struct.pack('f', 360 / 1799.0)
@@ -90,6 +92,7 @@ if __name__ == '__main__':
         cntGPS += 1
 
     while not rospy.is_shutdown() :
+        # time.sleep(1)
         cnt = 0
         timeData = fin.read(4)
         if (not timeData) :
@@ -105,21 +108,23 @@ if __name__ == '__main__':
         while (pGPS < cntGPS) :
             gpsTime = float(gpsData[pGPS][0])
             gpsMilliTime = int(gpsTime // 1000 % 100000000)
+            # gpsMilliTime = int(gpsTime)
             if (gpsMilliTime > timeData) :
                 break
             pGPS += 1
 
-        print timeData
+        # print timeData, pointNum
         roll = formatAngle(float(gpsData[pGPS][1]) - initRoll)
         pitch = formatAngle(float(gpsData[pGPS][2]) - initPitch)
         yaw = formatAngle(float(gpsData[pGPS][3]) - initYaw)
         x = float(gpsData[pGPS][4]) - initX
         y = float(gpsData[pGPS][5]) - initY
         z = float(gpsData[pGPS][6]) - initZ
+        # print ("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (roll, pitch, yaw, x*100, y*100, z*100))
 
         ang = struct.pack('3d', roll, pitch, yaw)
         fout.write(ang)
-        shv = struct.pack('3d', x, y, z)
+        shv = struct.pack('3d', y, x, z)
         fout.write(shv)
         gpsStat = struct.pack('B', 0)
         fout.write(gpsStat)
