@@ -60,9 +60,9 @@ if __name__ == '__main__':
     pGPS = 0
     cntGPS = 0
 
-    fin = open('outdoor_20_22_0726.highxy', 'rb')
-    tfin = open('outdoor_0726.nav', 'r')
-    fout = open('Anting_20_22_0726.ds', 'wb')
+    fin = open('outdoor_10_12_0726.highxy', 'rb')
+    tfin = open('anting_0726.nav', 'r')
+    fout = open('Anting_10_12_0726.ds', 'wb')
 
     angRange = struct.pack('f', 360)
     angRes   = struct.pack('f', 360 / 1799.0)
@@ -117,12 +117,12 @@ if __name__ == '__main__':
             pGPS += 1
 
         # print timeData, pointNum
-        roll = formatAngle(float(gpsData[pGPS][1]) - initRoll)
-        pitch = formatAngle(float(gpsData[pGPS][2]) - initPitch)
-        yaw = formatAngle(float(gpsData[pGPS][3]) - initYaw)
-        x = float(gpsData[pGPS][4]) - initX
-        y = float(gpsData[pGPS][5]) - initY
-        z = float(gpsData[pGPS][6]) - initZ
+        roll  = formatAngle(float(gpsData[pGPS][1])   - initRoll)
+        pitch = formatAngle(float(gpsData[pGPS][2])  - initPitch)
+        yaw   = formatAngle(float(gpsData[pGPS][3])    - initYaw)
+        x = float(gpsData[pGPS][4]) #- initX
+        y = float(gpsData[pGPS][5]) #- initY
+        z = float(gpsData[pGPS][6]) #- initZ
         # print ("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (roll, pitch, yaw, x*100, y*100, z*100))
 
         ang = struct.pack('3d', roll, pitch, yaw)
