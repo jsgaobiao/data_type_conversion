@@ -62,14 +62,16 @@ if __name__ == '__main__':
 
     fin = open('anting_20_22_0726.highxy', 'rb')
     tfin = open('anting_0726.nav', 'r')
-    fout = open('Anting_20_22_0726.ds', 'wb')
+    # fout = open('Anting_10_12_0726.ds', 'wb')
+    ftimeIn = open('20170915111029.pose', 'r');
+    ftimeOut = open('timeMatch.txt', 'w')
 
     angRange = struct.pack('f', 360)
     angRes   = struct.pack('f', 360 / 1799.0)
     unit     = struct.pack('f', 100)
-    fout.write(angRange)
-    fout.write(angRes)
-    fout.write(unit)
+    # fout.write(angRange)
+    # fout.write(angRes)
+    # fout.write(unit)
 
     line = tfin.readline()
     line = tfin.readline()
@@ -82,6 +84,7 @@ if __name__ == '__main__':
     initZ = float(lineData[6])
 
     gpsData = []
+    dict = {}
     while (True) :
         if (not line) :
             break
@@ -93,10 +96,10 @@ if __name__ == '__main__':
     while not rospy.is_shutdown() :
         # time.sleep(1)
         cnt = 0
-        timeData = fin.read(8)
+        timeData = fin.read(4)
         if (not timeData) :
             break
-        (timeData,) = struct.unpack('q', timeData)
+        (timeData,) = struct.unpack('i', timeData)
         pointNum = fin.read(4)
         (pointNum,) = struct.unpack('i', pointNum)
         lmsData = fin.read(4 * 2 * pointNum)
@@ -110,13 +113,13 @@ if __name__ == '__main__':
         # find matched GPS data
         while (pGPS < cntGPS) :
             gpsTime = float(gpsData[pGPS][0])
-            # gpsMilliTime = int(gpsTime // 1000 % 100000000)
-            gpsMilliTime = long(gpsTime)
+            gpsMilliTime = int(gpsTime // 1000 % 100000000)
+            # gpsMilliTime = int(gpsTime)
             if (gpsMilliTime > timeData) :
                 break
             pGPS += 1
 
-        print timeData, pointNum
+        # print timeData, pointNum
         roll  = formatAngle(float(gpsData[pGPS][1])   - initRoll)
         pitch = formatAngle(float(gpsData[pGPS][2])  - initPitch)
         yaw   = formatAngle(float(gpsData[pGPS][3])    - initYaw)
@@ -126,15 +129,33 @@ if __name__ == '__main__':
         # print ("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (roll, pitch, yaw, x*100, y*100, z*100))
 
         ang = struct.pack('3d', roll, pitch, yaw)
-        fout.write(ang)
+        # fout.write(ang)
         shv = struct.pack('3d', y, x, z)
-        fout.write(shv)
+        # fout.write(shv)
         gpsStat = struct.pack('B', 0)
-        fout.write(gpsStat)
-        timeStamp = struct.pack('q', timeData)
-        fout.write(timeStamp)
-        fout.write(lmsData)
+        # fout.write(gpsStat)
+        timeStamp = struct.pack('i', gpsMilliTime)
+        dict[str(gpsMilliTime)] = timeData
+        # print(gpsMilliTime)
+        # fout.write(timeStamp)
+        # fout.write(lmsData)
 
     fin.close()
     tfin.close()
-    fout.close()
+    # fout.close()
+
+    line = ftimeIn.readline()
+    ftimeOut.write(line)
+    while (True) :
+        line = ftimeIn.readline()
+        if (not line) :
+            break
+        lineData = line.split('\t')
+        lineData[1] = dict[str(lineData[1])]
+        for i in range(len(lineData)):
+            lineData[i-1] = str(lineData[i-1])
+        line = '\t'.join(lineData)
+        ftimeOut.write(line)
+
+    ftimeIn.close()
+    ftimeOut.close()
