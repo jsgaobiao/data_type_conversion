@@ -60,7 +60,7 @@ if __name__ == '__main__':
     pGPS = 0
     cntGPS = 0
 
-    fin = open('anting_20_22_0726.highxy', 'rb')
+    fin = open('highLayerFeature50.highxy', 'rb')
     tfin = open('anting_0726.nav', 'r')
     fout = open('Anting_20_22_0726.ds', 'wb')
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
         ang = struct.pack('3d', roll, pitch, yaw)
         fout.write(ang)
-        shv = struct.pack('3d', y, x, z)
+        shv = struct.pack('3d', x, y, z)
         fout.write(shv)
         gpsStat = struct.pack('B', 0)
         fout.write(gpsStat)
