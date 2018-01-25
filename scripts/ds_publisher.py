@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
-# This program is used to read data from .dsetxt format (a text version of .des file)
+# This program is used to read data from .ds format
 # and publish them, in which includes LaserScans, GPS shift (x, y, z), IMU (roll, pitch, yaw),
 # GPS status and TimeStamp.
 
-# .dsetxt format example:
+# .ds format example:
 # 180.000000    // angle range
 # 0.500000      // angle resolution
 # 100.000000    // unit
-# // encoder,roll,pitch,yaw,x,y,z,GPS status,TimeStamp (millisecond)
-# 0,-0.003393,0.005329,-3.098673,26375.889000,-1421.077000,-78.393560,7,23400002
+# // roll,pitch,yaw,x,y,z,northaccuracy,eastaccuracy,downaccuracy,gpsstatus,lmsdat(TimeStamp+Scans)
 # // data of one scan ...
 # 2644,2634,2665,2779,2779,2787,2806,2654,2655,2648,2653,2664,2665,2200,2149,2671......
 
@@ -18,6 +17,7 @@ import sys
 import string
 import math
 import tf
+import struct
 from sensor_msgs.msg._LaserScan import LaserScan
 
 def formatYaw(theta) :
@@ -32,13 +32,13 @@ def initScan() :
     scanData = LaserScan()
     scanData.header.seq = -1
     scanData.header.frame_id = 'laser'
-    scanData.angle_min = -math.pi # / 2.0
-    scanData.angle_max =  math.pi # / 2.0
-    scanData.angle_increment = 0.003492599  # 360 / 1799 degree
-    scanData.time_increment = 1.73611151695e-05
+    scanData.angle_min = -math.pi * 0.5
+    scanData.angle_max = math.pi * 1.5
+    scanData.angle_increment = 0.003492599 * 2 # 2*pi / 1799 degree
+    scanData.time_increment = 0 #1.73611151695e-05
     scanData.scan_time = 0.0250000003725
     scanData.range_min = 0.0230000000447
-    scanData.range_max = 100
+    scanData.range_max = 50
     return scanData
 
 
@@ -46,70 +46,66 @@ if __name__ == '__main__':
     # fileIn = raw_input('Enter input file name : ')
     # fileOut = raw_input('Enter output file name : ')
     scanPub = rospy.Publisher('scan', LaserScan, queue_size=10)
-    tfBr = tf.TransformBroadcaster()
-    rospy.init_node('dse_publisher', anonymous=False)
-    rate = rospy.Rate(40)  # hz
+    # tfBr = tf.TransformBroadcaster()
+    rospy.init_node('ds_publisher', anonymous=False)
+    rate = rospy.Rate(10)  # hz
     scanData = initScan()
 
     if len(sys.argv) != 2 :
-        print '[Usage : pythone dse_publisher.py [input file name]'
+        print '[Usage : pythone ds_publisher.py [input file name]'
         sys.exit()
     else :
         fileIn = sys.argv[1]
         # fileOut = sys.argv[2]
 
-    fin = open(fileIn, 'r')
-    angRange = float(fin.readline())
-    angRes = float(fin.readline())
-    unit = float(fin.readline())
+    fin = open(fileIn, 'rb')
+    angRange, angRes, unit = struct.unpack("fff", fin.read(4 * 3))
+    laserPointNums = int(angRange / angRes + 1)
+    laserByteNums = 2 * int(laserPointNums)
+    laserScan = [0] * int(laserPointNums)
 
     # get the initial data
-    # for i in range(6800) :  # skip datas that the car dosen't move
-    #     line0 = fin.readline()
-    #     line1 = fin.readline()
-    line0 = fin.readline()
-    line1 = fin.readline()
-    line0 = line0.split(',')
-    line1 = line1.split(',')
-    initX = float(line0[3])
-    initY = float(line0[4])
-    initYaw = float(line0[2])
-    lastTimeStamp = float(line0[7])
-    scanNum = len(line1)
-
+    initRoll, initPitch, initYaw = struct.unpack("ddd", fin.read(8 * 3))
+    initX, initY, initZ = struct.unpack("ddd", fin.read(8 * 3))
+    initNorthAc, initEastAc, initDownAc = struct.unpack("fff", fin.read(4 * 3))
+    gpsStatus, = struct.unpack("f", fin.read(4))
+    lastTimeStamp, = struct.unpack("q", fin.read(8))
+    fin.read(laserByteNums)
 
     while not rospy.is_shutdown() :
         rate.sleep()
         nowStamp = rospy.Time.now()
-        # encoder,roll,pitch,yaw,x,y,z,GPS status,TimeStamp (millisecond)
-        line0 = fin.readline()
-        # scan datas
-        line1 = fin.readline()
-        if (not line0) or (not line1) :
-            break
-        line0 = line0.split(',')
-        line1 = line1.split(',')
 
-        # get (x, y, yaw) and broadcast to /tf  ( odom -> base_link)
-        x = float(line0[3]) - initX
-        y = float(line0[4]) - initY
-        yaw = formatYaw(float(line0[2]) - initYaw)
-        # yaw += 0.09424778
-        tfBr.sendTransform((-y, x, 0),
-                           tf.transformations.quaternion_from_euler(0, 0, -yaw),
-                           nowStamp,
-                           'base_link',
-                           'odom')
-        tfBr.sendTransform((0, 0, 0),
-                           tf.transformations.quaternion_from_euler(0, 0, 0),
-                           nowStamp,
-                           'laser',
-                           'base_link')
+        line = fin.read(8 * 3)
+        if (not line) :
+            break
+        roll, pitch, yaw = struct.unpack("ddd", line)
+        x, y, z = struct.unpack("ddd", fin.read(8 * 3))
+        northAc, eastAc, downAc = struct.unpack("fff", fin.read(4 * 3))
+        gpsStatus, = struct.unpack("f", fin.read(4))
+        timeStamp, = struct.unpack("q", fin.read(8))
+        for i in range(laserPointNums):
+            laserScan[i], = struct.unpack("h", fin.read(2))
+
+        # tfBr.sendTransform((x, y, 0),
+        #                    tf.transformations.quaternion_from_euler(0, 0, yaw),
+        #                    nowStamp,
+        #                    'base_link',
+        #                    'odom')
+        # tfBr.sendTransform((0, 0, 0),
+        #                    tf.transformations.quaternion_from_euler(0, 0, 0),
+        #                    nowStamp,
+        #                    'laser',
+        #                    'base_link')
 
         # fill scan data
         scanData.header.seq += 1
         scanData.header.stamp = nowStamp
         scanData.ranges = []
-        for scanRange in line1 :
-            scanData.ranges.append(float(scanRange) / unit)
+        cnt = 0
+        for scanRange in laserScan :
+            cnt += 1
+            if cnt % 2 == 0:
+                continue
+            scanData.ranges.append(float(scanRange) / float(unit * 4))
         scanPub.publish(scanData)
