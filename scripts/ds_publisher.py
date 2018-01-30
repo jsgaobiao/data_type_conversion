@@ -32,13 +32,13 @@ def initScan() :
     scanData = LaserScan()
     scanData.header.seq = -1
     scanData.header.frame_id = 'laser'
-    scanData.angle_min = -math.pi / 2.0
-    scanData.angle_max = math.pi / 2.0
-    scanData.angle_increment = 0.003492599 # 360 / 1799 degree
+    scanData.angle_min = -math.pi * 0.5
+    scanData.angle_max = math.pi * 1.5
+    scanData.angle_increment = 0.003492599 * 2 # 2*pi / 1799 degree
     scanData.time_increment = 0 #1.73611151695e-05
     scanData.scan_time = 0.0250000003725
     scanData.range_min = 0.0230000000447
-    scanData.range_max = 100
+    scanData.range_max = 30
     return scanData
 
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         cnt = 0
         for scanRange in laserScan :
             cnt += 1
-            if cnt > 900:
-                break
-            scanData.ranges.append(float(scanRange) / float(unit))
+            if cnt % 2 == 0:
+                continue
+            scanData.ranges.append(float(scanRange) / float(unit * 4))
         scanPub.publish(scanData)
