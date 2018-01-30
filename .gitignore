@@ -1,1 +1,3 @@
-a.dsetxt
+*.dsetxt
+*.ds
+*.bag
